@@ -19,11 +19,18 @@
   <header class="bg-white/80 backdrop-blur-lg sticky top-0 z-50 shadow">
     <nav class="max-w-7xl mx-auto flex justify-between items-center p-4">
       <h1 class="font-bold text-2xl text-purple-700">Shubham Kumar</h1>
-      <ul class="flex gap-6">
+      <ul class="flex gap-6 items-center">
         <li><a href="#home" class="nav-link px-3 py-2 rounded-md text-gray-700 hover:bg-purple-600 hover:text-white">Home</a></li>
         <li><a href="#resume" class="nav-link px-3 py-2 rounded-md text-gray-700 hover:bg-purple-600 hover:text-white">Resume</a></li>
         <li><a href="#projects" class="nav-link px-3 py-2 rounded-md text-gray-700 hover:bg-purple-600 hover:text-white">Projects</a></li>
         <li><a href="#contact" class="nav-link px-3 py-2 rounded-md text-gray-700 hover:bg-purple-600 hover:text-white">Contact</a></li>
+        <!-- Download button in navbar -->
+        <li>
+          <a href="Shubham_resume.pdf" download 
+             class="px-4 py-2 bg-yellow-400 text-gray-900 font-semibold rounded-lg shadow hover:bg-yellow-500 transition">
+             📄 Download Resume
+          </a>
+        </li>
       </ul>
     </nav>
   </header>
@@ -33,12 +40,18 @@
     <img src="profile.jpg" alt="Profile" class="w-32 h-32 rounded-full border-4 border-white shadow-lg mb-6">
     <h2 class="text-4xl md:text-6xl font-bold">Hi, I'm Shubham 👋</h2>
     <p class="mt-4 text-lg md:text-xl text-purple-100">SQL Developer | Data Analyst | MCA Graduate</p>
-    <a href="#resume" class="mt-8 px-6 py-3 bg-white text-purple-700 rounded-lg shadow hover:bg-gray-100 transition">View My Resume</a>
+    
+    <!-- Buttons row -->
+    <div class="mt-8 flex flex-col sm:flex-row gap-4">
+      <a href="#resume" class="px-6 py-3 bg-white text-purple-700 rounded-lg shadow hover:bg-gray-100 transition">
+        View My Resume
+      </a>
+      <a href="Shubham_resume.pdf" download 
+         class="px-6 py-3 bg-yellow-400 text-gray-900 font-semibold rounded-lg shadow hover:bg-yellow-500 transition">
+         📄 Download Resume
+      </a>
+    </div>
   </section>
-<a href="Shubham_resume.pdf" download 
-   class="mt-6 px-6 py-3 bg-purple-600 text-white rounded-lg shadow hover:bg-purple-700 transition">
-   📄 Download Resume
-</a>
 
   <!-- Resume -->
   <section id="resume" class="py-20">
@@ -132,5 +145,3 @@
   </script>
 </body>
 </html>
-
-
