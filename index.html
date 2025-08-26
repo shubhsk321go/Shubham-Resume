@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shubham Kumar - SQL Developer & Data Analyst</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutral Harmony -->
+    <!-- Application Structure Plan: The application is now a single, scrollable resume page. It retains the sticky navigation bar to provide easy access to different sections. The key feature of Firebase integration remains, allowing the resume data to be fetched from and updated in Firestore. The 'Summary' section still has the interactive edit feature that saves changes back to Firestore. This design provides a clean, continuous reading experience while showcasing an understanding of data persistence and real-time synchronization. -->
+    <!-- Visualization & Content Choices: 
+        - Technical Skills: (Report Info: Skills List) -> (Goal: Organize/Compare) -> (Viz: Interactive Bar Chart) -> (Interaction: Category filter buttons update chart data) -> (Justification: Allows recruiters to instantly visualize and filter for relevant skills, far more engaging than a static list) -> (Library: Chart.js).
+        - Experience & Projects: (Report Info: Experience/Projects sections) -> (Goal: Show Change/Growth) -> (Presentation: Vertical Timeline) -> (Interaction: Click on timeline item to expand/collapse details) -> (Justification: Chronological flow is intuitive. The expand/collapse interaction keeps the initial view clean and focuses the user's attention) -> (Method: HTML/CSS/JS).
+        - Education/Certs: (Report Info: Education/Certs lists) -> (Goal: Inform) -> (Presentation: Card-based grid) -> (Interaction: None) -> (Justification: Simple, scannable presentation for credential information) -> (Method: HTML/Tailwind).
+        - Contacts: (Report Info: Contact info) -> (Goal: Inform) -> (Presentation: Dedicated page with contact details) -> (Interaction: Clickable links) -> (Justification: Separates contact information from the main content, making it easily accessible from the primary navigation) -> (Method: HTML/Tailwind).
+        - Real-time Editing: (Report Info: Professional Summary) -> (Goal: Allow user to edit) -> (Presentation: Editable text area within a modal-like structure) -> (Interaction: Edit button toggles visibility, Save button updates Firestore) -> (Justification: Enables direct user modification of content, demonstrating real-time data flow) -> (Method: HTML/CSS/JS/Firestore).
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #fdfcfb;
+            color: #1f2937;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            top: 12px;
+            left: -29px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background-color: #f0f0f0;
+            border: 4px solid #a855f7;
+            z-index: 1;
+        }
+        .details-content {
+            transition: max-height 0.5s ease-in-out, opacity 0.5s ease-in-out;
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+        }
+        .details-content.open {
+            max-height: 1000px;
+            opacity: 1;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 400px;
+            max-height: 50vh;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 450px;
+            }
+        }
+        /* Removed .content-section styles for single-page layout */
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="bg-white/80 backdrop-blur-lg sticky top-0 z-50 border-b border-gray-200">
+        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <span class="font-bold text-xl text-purple-600">Shubham Kumar</span>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="#summary" class="nav-link text-gray-600 hover:bg-purple-500 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Summary</a>
+                        <a href="#skills" class="nav-link text-gray-600 hover:bg-purple-500 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Skills</a>
+                        <a href="#experience" class="nav-link text-gray-600 hover:bg-purple-500 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Experience</a>
+                        <a href="#education" class="nav-link text-gray-600 hover:bg-purple-500 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Education</a>
+                        <a href="#contacts" class="nav-link text-gray-600 hover:bg-purple-500 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Contacts</a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main id="main-content" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+        <div id="loading" class="text-center text-gray-500 p-8">
+            <div class="flex items-center justify-center space-x-2 animate-pulse">
+                <div class="w-4 h-4 bg-purple-500 rounded-full"></div>
+                <div class="w-4 h-4 bg-purple-500 rounded-full"></div>
+                <div class="w-4 h-4 bg-purple-500 rounded-full"></div>
+            </div>
+            <p class="mt-4">Loading resume data...</p>
+        </div>
+        <div id="content-container" class="hidden">
+            <section id="hero" class="text-center py-16">
+                <h1 id="user-name" class="text-4xl md:text-6xl font-bold tracking-tight text-gray-900">Shubham Kumar</h1>
+                <p id="user-title" class="mt-4 text-lg md:text-xl text-gray-600">SQL Developer & Data Analyst</p>
+                <div id="user-id-display" class="mt-2 text-xs text-gray-400">User ID: <span id="user-id"></span></div>
+            </section>
+
+            <!-- All content sections are now always visible and scrollable -->
+            <section id="summary" class="py-12 md:py-16 bg-purple-50 rounded-xl">
+                <div class="max-w-3xl mx-auto text-center">
+                    <div class="flex justify-center items-center gap-4">
+                        <h2 class="text-3xl font-bold text-gray-900">Professional Summary</h2>
+                        <button id="edit-summary-btn" class="text-sm text-purple-600 hover:text-purple-800 font-medium">
+                            Edit
+                        </button>
+                    </div>
+                    <p id="summary-text" class="mt-6 text-lg text-gray-700 leading-relaxed"></p>
+                    <div id="edit-summary-form" class="hidden mt-6">
+                        <textarea id="summary-textarea" class="w-full h-40 p-4 border rounded-md focus:ring-purple-500 focus:border-purple-500"></textarea>
+                        <button id="save-summary-btn" class="mt-4 bg-purple-600 text-white px-6 py-2 rounded-md font-medium hover:bg-purple-700">Save</button>
+                        <button id="cancel-edit-btn" class="mt-4 ml-2 bg-gray-300 text-gray-800 px-6 py-2 rounded-md font-medium hover:bg-gray-400">Cancel</button>
+                        <div id="message-box" class="mt-4 text-sm text-green-600"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="skills" class="py-12 md:py-20">
+                <div class="max-w-4xl mx-auto text-center">
+                    <h2 class="text-3xl font-bold text-gray-900">Technical Skills Dashboard</h2>
+                    <p class="mt-4 text-lg text-gray-600">
+                        This chart provides a visual overview of my technical abilities. Use the buttons below to filter the skills by category and see how my expertise aligns with your needs.
+                    </p>
+                    <div id="skill-filters" class="mt-8 flex flex-wrap justify-center gap-2">
+                        <button class="skill-filter-btn active bg-purple-600 text-white px-4 py-2 rounded-full text-sm font-medium" data-category="all">All</button>
+                        <button class="skill-filter-btn bg-white text-gray-700 px-4 py-2 rounded-full text-sm font-medium border border-gray-300 hover:bg-gray-100" data-category="Databases">Databases</button>
+                        <button class="skill-filter-btn bg-white text-gray-700 px-4 py-2 rounded-full text-sm font-medium border border-gray-300 hover:bg-gray-100" data-category="SQL Concepts">SQL Concepts</button>
+                        <button class="skill-filter-btn bg-white text-gray-700 px-4 py-2 rounded-full text-sm font-medium border border-gray-300 hover:bg-gray-100" data-category="Programming">Programming</button>
+                        <button class="skill-filter-btn bg-white text-gray-700 px-4 py-2 rounded-full text-sm font-medium border border-gray-300 hover:bg-gray-100" data-category="Visualization & Tools">Visualization & Tools</button>
+                    </div>
+                    <div class="mt-8 chart-container">
+                        <canvas id="skillsChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <section id="experience" class="py-12 md:py-20">
+                <div class="max-w-4xl mx-auto">
+                    <h2 class="text-3xl font-bold text-center text-gray-900">Career Timeline</h2>
+                    <p class="mt-4 text-lg text-center text-gray-600">
+                        An interactive timeline of my professional experience and key projects. Click on any title to expand and view more details about my responsibilities and achievements.
+                    </p>
+                    <div class="mt-12 relative border-l-2 border-purple-200 ml-4 md:ml-8" id="timeline-container">
+                    </div>
+                </div>
+            </section>
+
+            <section id="education" class="py-12 md:py-16 bg-purple-50 rounded-xl">
+                <div class="max-w-4xl mx-auto">
+                    <h2 class="text-3xl font-bold text-center text-gray-900">Education & Certifications</h2>
+                    <p class="mt-4 text-lg text-center text-gray-600">
+                        My academic background and the professional certifications I have earned to continuously improve my skills and knowledge in the field of data.
+                    </p>
+                    <div class="mt-12 grid md:grid-cols-2 gap-8">
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-800">Education</h3>
+                            <div class="mt-4 space-y-4" id="education-container">
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-800">Certifications</h3>
+                            <div id="certifications-container" class="mt-4 space-y-4">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="contacts" class="py-12 md:py-16 bg-white rounded-xl">
+                <div class="max-w-3xl mx-auto text-center">
+                    <h2 class="text-3xl font-bold text-gray-900">Get In Touch</h2>
+                    <p class="mt-4 text-lg text-gray-600">
+                        I'm currently seeking new opportunities. Feel free to connect with me!
+                    </p>
+                    <div class="mt-8 grid sm:grid-cols-2 gap-8" id="contacts-container">
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="bg-gray-800 text-white mt-16">
+        <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 text-center">
+            <p>&copy; 2024 Shubham Kumar. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            let db;
+            let auth;
+            let userId;
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+            const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+            const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+            const loadingIndicator = document.getElementById('loading');
+            const contentContainer = document.getElementById('content-container');
+            const summaryTextElement = document.getElementById('summary-text');
+            const summaryTextarea = document.getElementById('summary-textarea');
+            const editSummaryBtn = document.getElementById('edit-summary-btn');
+            const saveSummaryBtn = document.getElementById('save-summary-btn');
+            const cancelEditBtn = document.getElementById('cancel-edit-btn');
+            const editSummaryForm = document.getElementById('edit-summary-form');
+            const messageBox = document.getElementById('message-box');
+            let skillsChart;
+
+            try {
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                userId = auth.currentUser.uid;
+                document.getElementById('user-id').textContent = userId;
+
+                const resumeDocRef = doc(db, `artifacts/${appId}/users/${userId}/resumes/myResume`);
+
+                const hardcodedData = {
+                    name: 'Shubham Kumar',
+                    title: 'SQL Developer & Data Analyst',
+                    summary: 'Detail-oriented Master of Computer Applications (MCA) graduate with one year of professional experience in SQL development and L2/L3 application support at Concentrix. Proven ability in database management, query optimization, and data analytics. Seeking to leverage technical skills in SQL, Python, and data visualization to contribute to database development, reporting, and strategic decision-making in a growth-oriented organization.',
+                    skillsData: {
+                        'Databases': ['MySQL', 'PostgreSQL'],
+                        'SQL Concepts': ['Joins', 'Subqueries', 'CTEs', 'Indexing', 'Normalization', 'Transactions'],
+                        'Programming': ['Python', 'Pandas', 'NumPy'],
+                        'Visualization & Tools': ['Matplotlib', 'Seaborn', 'Power BI', 'Advanced Excel'],
+                        'Other': ['Data Analysis', 'ETL Concepts', 'Reporting']
+                    },
+                    timelineData: [
+                        { type: 'job', title: 'SQL Developer / Data Associate', company: 'Concentrix, Gurugram', date: 'November 2023 – April 2025', details: ['Provided L2 and L3 application support, including analyzing, debugging, and resolving critical application issues by running fixes and coordinating with teammates.', 'Conducted in-depth code reviews and analysis to identify and resolve bugs, and developed new code for client reports as needed.', 'Collaborated with the application development team to design and implement new database objects, including tables, constraints, sequences, views, and indexes.', 'Created new database objects like procedures, functions, packages, triggers, indexes, and views in development and production environments using PL/SQL.'] },
+                        { type: 'project', title: 'Sales Data Analysis (Python + Pandas)', company: 'Personal Project', date: 'Project', details: ['Analyzed over 10,000 transactions to identify key trends and seasonal patterns.', 'Enhanced trend identification by 25% by using data cleaning and visualization techniques with Matplotlib and Seaborn.'] },
+                        { type: 'project', title: 'Student Management System (Python + MySQL)', company: 'Personal Project', date: 'Project', details: ['Developed a MySQL-backed application to manage over 500 student records.', 'Implemented CRUD operations with Python-MySQL Connector, which improved data retrieval efficiency by 30%.'] }
+                    ],
+                    educationData: [
+                        { title: 'Master of Computer Applications (MCA)', organization: 'Manipal University, Jaipur, 2024' },
+                        { title: 'Bachelor of Commerce (B.Com)', organization: 'School of Open Learning, Delhi University, 2021' }
+                    ],
+                    certificationsData: [
+                        'Python for Everybody Specialization – Coursera',
+                        'SQL for Data Science – Coursera',
+                        'Data Analysis with Python – Udemy',
+                        'Full Stack Data Science Development Bootcamp – AlmaBetter'
+                    ],
+                    contactsData: {
+                        email: 'send2s.thakur@gmail.com',
+                        phone: '9625232399',
+                        linkedin: 'https://linkedin.com/in/shubham-kumar9625',
+                        github: 'https://github.com/shubhsk321go'
+                    }
+                };
+
+                const docSnap = await getDoc(resumeDocRef);
+                if (!docSnap.exists()) {
+                    await setDoc(resumeDocRef, hardcodedData);
+                }
+
+                onSnapshot(resumeDocRef, (docSnap) => {
+                    const resumeData = docSnap.data();
+                    if (resumeData) {
+                        updateUI(resumeData);
+                    }
+                });
+
+                editSummaryBtn.addEventListener('click', () => {
+                    summaryTextarea.value = summaryTextElement.textContent.trim();
+                    summaryTextElement.style.display = 'none';
+                    editSummaryForm.style.display = 'block';
+                });
+
+                saveSummaryBtn.addEventListener('click', async () => {
+                    messageBox.textContent = 'Saving...';
+                    const newSummary = summaryTextarea.value;
+                    try {
+                        await setDoc(resumeDocRef, { summary: newSummary }, { merge: true });
+                        summaryTextElement.style.display = 'block';
+                        editSummaryForm.style.display = 'none';
+                        messageBox.textContent = 'Saved successfully!';
+                        setTimeout(() => messageBox.textContent = '', 2000);
+                    } catch (error) {
+                        messageBox.textContent = 'Error saving: ' + error.message;
+                    }
+                });
+
+                cancelEditBtn.addEventListener('click', () => {
+                    summaryTextElement.style.display = 'block';
+                    editSummaryForm.style.display = 'none';
+                    messageBox.textContent = '';
+                });
+
+            } catch (error) {
+                loadingIndicator.textContent = 'Error loading data. Please try again.';
+                console.error('Firebase initialization error:', error);
+            }
+
+            function updateUI(data) {
+                loadingIndicator.classList.add('hidden');
+                contentContainer.classList.remove('hidden');
+
+                document.getElementById('user-name').textContent = data.name;
+                document.getElementById('user-title').textContent = data.title;
+                summaryTextElement.textContent = data.summary;
+
+                updateSkillsChart(data.skillsData);
+                updateTimeline(data.timelineData);
+                updateEducation(data.educationData);
+                updateCertifications(data.certificationsData);
+                updateContacts(data.contactsData);
+            }
+
+            function updateSkillsChart(skillsData) {
+                const ctx = document.getElementById('skillsChart').getContext('2d');
+                if (skillsChart) {
+                    skillsChart.destroy();
+                }
+
+                const allSkills = Object.values(skillsData).flat();
+                const initialData = {
+                    labels: allSkills,
+                    datasets: [{
+                        label: 'Skills',
+                        data: allSkills.map(() => Math.floor(Math.random() * (95 - 70 + 1)) + 70),
+                        backgroundColor: 'rgba(168, 85, 247, 0.6)',
+                        borderColor: 'rgba(139, 92, 246, 1)',
+                        borderWidth: 1
+                    }]
+                };
+
+                skillsChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: initialData,
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { enabled: false }
+                        },
+                        scales: {
+                            x: { beginAtZero: true, display: false },
+                            y: { ticks: { font: { size: 14 } } }
+                        }
+                    }
+                });
+
+                const filterButtons = document.querySelectorAll('.skill-filter-btn');
+                filterButtons.forEach(button => {
+                    button.onclick = () => {
+                        filterButtons.forEach(btn => {
+                            btn.classList.remove('active', 'bg-purple-600', 'text-white');
+                            btn.classList.add('bg-white', 'text-gray-700');
+                        });
+                        button.classList.add('active', 'bg-purple-600', 'text-white');
+                        button.classList.remove('bg-white', 'text-gray-700');
+
+                        const category = button.dataset.category;
+                        let filteredSkills;
+                        if (category === 'all') {
+                            filteredSkills = Object.values(skillsData).flat();
+                        } else {
+                            filteredSkills = skillsData[category];
+                        }
+
+                        const newData = {
+                            labels: filteredSkills,
+                            datasets: [{
+                                label: 'Skills',
+                                data: filteredSkills.map(() => Math.floor(Math.random() * (95 - 70 + 1)) + 70),
+                                backgroundColor: 'rgba(168, 85, 247, 0.6)',
+                                borderColor: 'rgba(139, 92, 246, 1)',
+                                borderWidth: 1
+                            }]
+                        };
+                        
+                        skillsChart.data = newData;
+                        skillsChart.update();
+                    };
+                });
+            }
+
+            function updateTimeline(timelineData) {
+                const timelineContainer = document.getElementById('timeline-container');
+                timelineContainer.innerHTML = '';
+                timelineData.forEach(item => {
+                    const itemElement = document.createElement('div');
+                    itemElement.className = 'timeline-item mb-8 ml-8 cursor-pointer';
+                    itemElement.innerHTML = `
+                        <div class="p-4 bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-300">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h3 class="text-lg font-bold text-purple-700">${item.title}</h3>
+                                    <p class="text-sm font-medium text-gray-600">${item.company}</p>
+                                    <p class="text-xs text-gray-500 mt-1">${item.date}</p>
+                                </div>
+                                <span class="text-purple-500 text-xs font-semibold expand-icon">&#9662; Details</span>
+                            </div>
+                            <div class="details-content mt-4 border-t pt-4">
+                                <ul class="list-disc list-inside space-y-2 text-gray-700">
+                                    ${item.details.map(d => `<li>${d}</li>`).join('')}
+                                </ul>
+                            </div>
+                        </div>
+                    `;
+                    timelineContainer.appendChild(itemElement);
+
+                    itemElement.addEventListener('click', () => {
+                        const content = itemElement.querySelector('.details-content');
+                        const icon = itemElement.querySelector('.expand-icon');
+                        content.classList.toggle('open');
+                        icon.innerHTML = content.classList.contains('open') ? '&#9652; Hide' : '&#9662; Details';
+                    });
+                });
+            }
+
+            function updateEducation(educationData) {
+                const educationContainer = document.getElementById('education-container');
+                educationContainer.innerHTML = '';
+                educationData.forEach(edu => {
+                    const eduElement = document.createElement('div');
+                    eduElement.className = 'p-4 bg-white rounded-lg border border-gray-200';
+                    eduElement.innerHTML = `<p class="font-semibold">${edu.title}</p><p class="text-gray-600">${edu.organization}</p>`;
+                    educationContainer.appendChild(eduElement);
+                });
+            }
+
+            function updateCertifications(certificationsData) {
+                const certsContainer = document.getElementById('certifications-container');
+                certsContainer.innerHTML = '';
+                certificationsData.forEach(cert => {
+                    const certElement = document.createElement('div');
+                    certElement.className = 'p-4 bg-white rounded-lg border border-gray-200';
+                    certElement.innerHTML = `<p class="font-semibold">${cert}</p>`;
+                    certsContainer.appendChild(certElement);
+                });
+            }
+
+            function updateContacts(contactsData) {
+                const contactsContainer = document.getElementById('contacts-container');
+                contactsContainer.innerHTML = `
+                    <div class="bg-gray-100 p-6 rounded-lg text-center">
+                        <h3 class="font-bold text-lg text-purple-700">Email</h3>
+                        <p class="mt-2 text-gray-600">${contactsData.email}</p>
+                    </div>
+                    <div class="bg-gray-100 p-6 rounded-lg text-center">
+                        <h3 class="font-bold text-lg text-purple-700">Phone</h3>
+                        <p class="mt-2 text-gray-600">${contactsData.phone}</p>
+                    </div>
+                    <div class="bg-gray-100 p-6 rounded-lg text-center">
+                        <h3 class="font-bold text-lg text-purple-700">LinkedIn</h3>
+                        <a href="${contactsData.linkedin}" target="_blank" class="text-purple-600 hover:underline">linkedin.com/in/shubham-kumar9625</a>
+                    </div>
+                    <div class="bg-gray-100 p-6 rounded-lg text-center">
+                        <h3 class="font-bold text-lg text-purple-700">GitHub</h3>
+                        <a href="${contactsData.github}" target="_blank" class="text-purple-600 hover:underline">github.com/shubhsk321go</a>
+                    </div>
+                `;
+            }
+
+            // The following JavaScript is no longer needed for a single-page layout.
+            // function showSection(id) {
+            //     sections.forEach(section => {
+            //         section.classList.remove('active');
+            //     });
+            //     document.getElementById(id).classList.add('active');
+            //     
+            //     navLinks.forEach(link => {
+            //         link.classList.remove('bg-purple-500', 'text-white');
+            //         link.classList.add('text-gray-600');
+            //     });
+            //
+            //     const activeLink = document.querySelector(`.nav-link[href="#${id}"]`);
+            //     if (activeLink) {
+            //         activeLink.classList.add('bg-purple-500', 'text-white');
+            //         activeLink.classList.remove('text-gray-600');
+            //     }
+            // }
+
+            // navLinks.forEach(link => {
+            //     link.addEventListener('click', (e) => {
+            //         e.preventDefault();
+            //         const targetId = e.target.getAttribute('href').substring(1);
+            //         showSection(targetId);
+            //     });
+            // });
+
+            // The initial call to showSection('summary') is also no longer needed.
+        });
+    </script>
+</body>
+</html>
